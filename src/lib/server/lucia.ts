@@ -3,11 +3,13 @@ import {
 	DISCORD_CLIENT_SECRET,
 	DISCORD_REDIRECT_URI_BASE,
 } from '$env/static/private';
+import type { LuciaUser } from '@lucia-auth/oauth/lucia';
 import { PrismaClient } from '@prisma/client';
 import { dev } from '$app/environment';
 import { discord } from '@lucia-auth/oauth/providers';
 import lucia from 'lucia-auth';
 import prisma from '@lucia-auth/adapter-prisma';
+import { redirect } from '@sveltejs/kit';
 import { sveltekit } from 'lucia-auth/middleware';
 
 export const auth = lucia({
@@ -23,11 +25,19 @@ export const auth = lucia({
 		};
 	},
 });
+export type Auth = typeof auth;
 
 export const discordAuth = discord(auth, {
 	clientId: DISCORD_CLIENT_ID,
 	clientSecret: DISCORD_CLIENT_SECRET,
-	redirectUri: new URL('/api/oauth/discord/callback', DISCORD_REDIRECT_URI_BASE).toString(),
+	redirectUri: new URL('/api/oauth/callback', DISCORD_REDIRECT_URI_BASE).toString(),
 });
 
-export type Auth = typeof auth;
+export async function validateRoute(
+	locals: App.Locals,
+	redirectPath: string
+): Promise<LuciaUser<Auth>> {
+	const { user } = await locals.auth.validateUser();
+	if (!user) throw redirect(302, '/api/oauth?redirect=' + redirectPath);
+	return user;
+}

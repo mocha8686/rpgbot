@@ -10,6 +10,7 @@ export const actions = {
 		const redirectPath = formData.get('redirect') as string ?? '/';
 
 		auth.invalidateSession(session.sessionId);
+		locals.auth.setSession(null);
 		throw redirect(302, redirectPath);
 	},
 } satisfies Actions;

@@ -12,12 +12,11 @@
 	{#if user}
 		<img src={user.avatar} alt="Avatar" />
 		<p>{user.username}</p>
-		<form action="/?/logout" method="post" use:enhance>
-			<input type="hidden" name="redirect" value={$page.url.pathname} />
+		<form action="/api/oauth/logout" use:enhance>
 			<button>Sign out</button>
 		</form>
 	{:else}
-		<a href={`/api/oauth/discord?redirect=${$page.url.pathname}`}>Sign in with Discord</a>
+		<a href={`/api/oauth?redirect=${$page.url.pathname}`}>Sign in with Discord</a>
 	{/if}
 </header>
 

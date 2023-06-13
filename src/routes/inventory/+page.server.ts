@@ -1,4 +1,5 @@
 import type { Actions, PageServerLoad } from './$types';
+import { validateRoute } from '$lib/server/lucia';
 import { z } from 'zod';
 
 const InventoryAdd = z.object({
@@ -8,8 +9,11 @@ const InventoryAdd = z.object({
 
 const items: z.infer<typeof InventoryAdd>[] = [];
 
-export const load = (async () => {
+export const load = (async ({ locals, url }) => {
+	const user = validateRoute(locals, url.pathname);
+
 	return {
+		user,
 		items,
 	};
 }) satisfies PageServerLoad;
