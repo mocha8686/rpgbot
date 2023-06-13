@@ -4,6 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
+		"dev:db": "pscale connect rpgbot initial-setup --port 3309",
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "playwright test",
