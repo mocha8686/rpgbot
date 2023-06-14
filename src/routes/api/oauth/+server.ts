@@ -1,5 +1,6 @@
-import { type RequestHandler, redirect } from '@sveltejs/kit';
 import { discordAuth } from '$lib/server/lucia';
+
+import { redirect, type RequestHandler } from '@sveltejs/kit';
 
 export const GET = (async ({ cookies, url }) => {
 	const [discordUrl, state] = await discordAuth.getAuthorizationUrl();

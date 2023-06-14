@@ -1,16 +1,18 @@
+import { dev } from '$app/environment';
 import {
 	DISCORD_CLIENT_ID,
 	DISCORD_CLIENT_SECRET,
 	DISCORD_REDIRECT_URI_BASE,
 } from '$env/static/private';
-import type { LuciaUser } from '@lucia-auth/oauth/lucia';
-import { PrismaClient } from '@prisma/client';
-import { dev } from '$app/environment';
-import { discord } from '@lucia-auth/oauth/providers';
 import lucia from 'lucia-auth';
-import prisma from '@lucia-auth/adapter-prisma';
-import { redirect } from '@sveltejs/kit';
 import { sveltekit } from 'lucia-auth/middleware';
+
+import prisma from '@lucia-auth/adapter-prisma';
+import { discord } from '@lucia-auth/oauth/providers';
+import { PrismaClient } from '@prisma/client';
+import { redirect } from '@sveltejs/kit';
+
+import type { LuciaUser } from '@lucia-auth/oauth/lucia';
 
 export const auth = lucia({
 	adapter: prisma(new PrismaClient()),

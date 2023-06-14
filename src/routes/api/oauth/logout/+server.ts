@@ -1,5 +1,6 @@
-import { type RequestHandler, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/lucia';
+
+import { redirect, type RequestHandler } from '@sveltejs/kit';
 
 export const GET = (async ({ locals }) => {
 	const { session } = await locals.auth.validateUser();

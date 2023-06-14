@@ -1,6 +1,7 @@
-import type { Actions, PageServerLoad } from './$types';
 import { validateRoute } from '$lib/server/lucia';
 import { z } from 'zod';
+
+import type { Actions, PageServerLoad } from './$types';
 
 const InventoryAdd = z.object({
 	name: z.string(),

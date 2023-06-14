@@ -1,6 +1,8 @@
-import { type RequestHandler, error, redirect } from '@sveltejs/kit';
-import { auth, discordAuth } from '$lib/server/lucia';
 import path from 'node:path';
+
+import { auth, discordAuth } from '$lib/server/lucia';
+
+import { error, redirect, type RequestHandler } from '@sveltejs/kit';
 
 export const GET = (async ({ cookies, url, locals }) => {
 	const code = url.searchParams.get('code');
