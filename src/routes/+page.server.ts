@@ -7,7 +7,7 @@ export const actions = {
 		if (!session) return;
 
 		const formData = await request.formData();
-		const redirectPath = formData.get('redirect') as string ?? '/';
+		const redirectPath = (formData.get('redirect') as string) ?? '/';
 
 		auth.invalidateSession(session.sessionId);
 		locals.auth.setSession(null);

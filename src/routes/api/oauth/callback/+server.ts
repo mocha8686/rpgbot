@@ -19,7 +19,7 @@ export const GET = (async ({ cookies, url, locals }) => {
 				username: providerUser.username,
 				avatar: new URL(
 					path.join('avatars', providerUser.id, `${providerUser.avatar}.webp`),
-					'https://cdn.discordapp.com',
+					'https://cdn.discordapp.com'
 				).toString(),
 				snowflake: providerUser.id,
 			}));
