@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
 
 	import type { LayoutData } from './$types';
@@ -13,7 +12,7 @@
 	{#if user}
 		<img src={user.avatar} alt="Avatar" />
 		<p>{user.username}</p>
-		<form action="/api/oauth/logout" use:enhance>
+		<form action="/api/oauth/logout">
 			<button>Sign out</button>
 		</form>
 	{:else}

@@ -1,28 +1,27 @@
 import { validateRoute } from '$lib/server/lucia';
-import { z } from 'zod';
+import prisma from '$lib/server/prisma';
 
-import type { Actions, PageServerLoad } from './$types';
-
-const InventoryAdd = z.object({
-	name: z.string(),
-	count: z.coerce.number(),
-});
-
-const items: z.infer<typeof InventoryAdd>[] = [];
+import type { PageServerLoad } from './$types';
 
 export const load = (async ({ locals, url }) => {
-	const user = validateRoute(locals, url.pathname);
+	const user = await validateRoute(locals, url.pathname);
+
+	const res = await prisma.authUser.findUniqueOrThrow({
+		where: {
+			id: user.userId,
+		},
+		select: {
+			items: {
+				select: {
+					name: true,
+					count: true,
+				},
+			},
+		},
+	});
 
 	return {
 		user,
-		items,
+		items: res.items,
 	};
 }) satisfies PageServerLoad;
-
-export const actions = {
-	add: async ({ request }) => {
-		const form = Object.fromEntries((await request.formData()).entries());
-		const item = InventoryAdd.parse(form);
-		items.push(item);
-	},
-} satisfies Actions;
