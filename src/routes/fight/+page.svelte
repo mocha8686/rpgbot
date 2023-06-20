@@ -34,6 +34,7 @@
 		'W--------W',
 		'WWWWWWWWWW',
 	];
+	const map = fieldSchema.parse(mapData.map((row) => row.split('').map(parseToCell)));
 
 	const player: Unit = {
 		id: crypto.randomUUID(),
@@ -46,16 +47,13 @@
 		position: [7, 7],
 	};
 
-	$: field = placeUnitsOnMap(
-		fieldSchema.parse(mapData.map((row) => row.split('').map(parseToCell))),
-		[player, enemy]
-	);
+	$: field = placeUnitsOnMap(structuredClone(map), [player, enemy]);
 
-	function placeUnitsOnMap(field: Field, units: Unit[]): Field {
+	function placeUnitsOnMap(map: Field, units: Unit[]): Field {
 		for (const unit of units) {
-			setCellAtPosition(field, unit.position, unit.type);
+			setCellAtPosition(map, unit.position, unit.type);
 		}
-		return field;
+		return map;
 	}
 
 	function calculateAimModifier(field: Field): number {
@@ -169,7 +167,7 @@
 	}
 
 	function updatePlayerPosition(newX: number, newY: number) {
-		player.position = [newX, newY];
+		if (getCellAtPosition(field, [newX, newY]) === 'empty') player.position = [newX, newY];
 	}
 
 	$: aimModifier = calculateAimModifier(field);
