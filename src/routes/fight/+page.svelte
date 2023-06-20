@@ -16,21 +16,35 @@
 		east: boolean;
 		west: boolean;
 	};
+	type Unit = {
+		id: string;
+		position: Point;
+	};
 
-	const fieldLayout = [
+	const map = [
 		'WWWWWWWWWW',
 		'W----WW--W',
-		'W-P------W',
+		'W--------W',
 		'W--W-----W',
 		'W--W---W-W',
 		'W--W-----W',
 		'W-WW---W-W',
-		'W-WW---E-W',
+		'W-WW-----W',
 		'W--------W',
 		'WWWWWWWWWW',
 	];
 
-	const field = fieldSchema.parse(fieldLayout.map((row) => row.split('').map(parseToCell)));
+	const player: Unit = {
+		id: crypto.randomUUID(),
+		position: [2, 2],
+	};
+	const enemy: Unit = {
+		id: crypto.randomUUID(),
+		position: [7, 7],
+	};
+	const field = fieldSchema.parse(map.map((row) => row.split('').map(parseToCell)));
+	setCellAtPosition(field, player.position, 'player');
+	setCellAtPosition(field, enemy.position, 'enemy');
 
 	function calculateAimModifier(field: Field): number {
 		const playerPosition = findFirstIndexOf(field, 'player');
@@ -106,7 +120,7 @@
 	function findFirstIndexOf(field: Field, cell: Cell): Point | undefined {
 		for (let y = 0; y < field.length; y++) {
 			for (let x = 0; x < field[y].length; x++) {
-				if (field[y][x] === cell) return [x, y];
+				if (getCellAtPosition(field, [x, y]) === cell) return [x, y];
 			}
 		}
 
@@ -117,14 +131,14 @@
 		return field.at(position[1])?.at(position[0]);
 	}
 
+	function setCellAtPosition(field: Field, position: Point, cell: Cell) {
+		field[position[1]][position[0]] = cell;
+	}
+
 	function parseToCell(input: string): Cell {
 		switch (input) {
-			case 'P':
-				return 'player';
 			case 'W':
 				return 'wall';
-			case 'E':
-				return 'enemy';
 			case '-':
 			default:
 				return 'empty';
@@ -145,14 +159,12 @@
 	}
 
 	function updatePlayerPosition(newX: number, newY: number) {
-		if (field[newY][newX] !== 'empty') return;
+		if (getCellAtPosition(field, [newX, newY]) !== 'empty') return;
 
 		const oldPlayerPosition = findFirstIndexOf(field, 'player');
 
-		if (oldPlayerPosition) {
-			field[oldPlayerPosition[1]][oldPlayerPosition[0]] = 'empty';
-		}
-		field[newY][newX] = 'player';
+		if (oldPlayerPosition) setCellAtPosition(field, oldPlayerPosition, 'empty');
+		setCellAtPosition(field, [newX, newY], 'player');
 	}
 
 	$: aimModifier = calculateAimModifier(field);
@@ -162,8 +174,8 @@
 
 <div
 	class="field"
-	style:grid-template-rows={`repeat(${fieldLayout.length}, 2rem)`}
-	style:grid-template-columns={`repeat(${fieldLayout[0].length}, 2rem)`}
+	style:grid-template-rows={`repeat(${map.length}, 2rem)`}
+	style:grid-template-columns={`repeat(${map[0].length}, 2rem)`}
 >
 	{#each field as cols, y}
 		{#each cols as cell, x}
