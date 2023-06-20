@@ -18,10 +18,11 @@
 	};
 	type Unit = {
 		id: string;
+		type: Cell;
 		position: Point;
 	};
 
-	const map = [
+	const mapData = [
 		'WWWWWWWWWW',
 		'W----WW--W',
 		'W--------W',
@@ -36,15 +37,26 @@
 
 	const player: Unit = {
 		id: crypto.randomUUID(),
+		type: 'player',
 		position: [2, 2],
 	};
 	const enemy: Unit = {
 		id: crypto.randomUUID(),
+		type: 'enemy',
 		position: [7, 7],
 	};
-	const field = fieldSchema.parse(map.map((row) => row.split('').map(parseToCell)));
-	setCellAtPosition(field, player.position, 'player');
-	setCellAtPosition(field, enemy.position, 'enemy');
+
+	$: field = placeUnitsOnMap(
+		fieldSchema.parse(mapData.map((row) => row.split('').map(parseToCell))),
+		[player, enemy]
+	);
+
+	function placeUnitsOnMap(field: Field, units: Unit[]): Field {
+		for (const unit of units) {
+			setCellAtPosition(field, unit.position, unit.type);
+		}
+		return field;
+	}
 
 	function calculateAimModifier(field: Field): number {
 		const playerPosition = findFirstIndexOf(field, 'player');
@@ -94,8 +106,6 @@
 		enemyPosition: Point
 	): [number, number] {
 		const cover = calculateCover(field, enemyPosition);
-
-		console.debug(cover);
 
 		if (
 			(cover.north && playerPosition[1] < enemyPosition[1]) ||
@@ -159,12 +169,7 @@
 	}
 
 	function updatePlayerPosition(newX: number, newY: number) {
-		if (getCellAtPosition(field, [newX, newY]) !== 'empty') return;
-
-		const oldPlayerPosition = findFirstIndexOf(field, 'player');
-
-		if (oldPlayerPosition) setCellAtPosition(field, oldPlayerPosition, 'empty');
-		setCellAtPosition(field, [newX, newY], 'player');
+		player.position = [newX, newY];
 	}
 
 	$: aimModifier = calculateAimModifier(field);
@@ -174,8 +179,8 @@
 
 <div
 	class="field"
-	style:grid-template-rows={`repeat(${map.length}, 2rem)`}
-	style:grid-template-columns={`repeat(${map[0].length}, 2rem)`}
+	style:grid-template-rows={`repeat(${mapData.length}, 2rem)`}
+	style:grid-template-columns={`repeat(${mapData[0].length}, 2rem)`}
 >
 	{#each field as cols, y}
 		{#each cols as cell, x}
