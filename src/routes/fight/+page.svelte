@@ -112,7 +112,7 @@
 					enemyPosition
 				);
 
-				// Good angle
+				// TODO: Good angle
 
 				return coverModifier + flankingModifier;
 			});
