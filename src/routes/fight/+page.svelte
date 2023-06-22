@@ -1,6 +1,11 @@
 <script lang="ts">
 	const FLANKING_MODIFIER = 0.6;
 	const COVER_MODIFIER = -0.4;
+	const GOOD_ANGLE_MAX_DEG = 45;
+	const GOOD_ANGLE_MAX_RAD = GOOD_ANGLE_MAX_DEG * (Math.PI / 180);
+	const GOOD_ANGLE_MIN_DEG = 10;
+	const GOOD_ANGLE_MIN_RAD = GOOD_ANGLE_MIN_DEG * (Math.PI / 180);
+	const GOOD_ANGLE_MAX_MODIFIER = 0.2;
 
 	const MAP = [
 		'---W---W--',
@@ -13,6 +18,11 @@
 		'--W--WW---',
 		'----------',
 		'---WWW----',
+		'----------',
+		'----------',
+		'----------',
+		'--------W-',
+		'----------',
 	];
 
 	type Cell = 'wall' | 'empty';
@@ -73,15 +83,42 @@
 					.filter((position) => this.moved(position).canSee(target))
 					.map(this.moved.bind(this))
 					.map((attacker) => {
-						// cover/flanking
-						const coverOrFlankingModifier = attacker.isFlanking(target)
+						return attacker.isFlanking(target)
 							? FLANKING_MODIFIER
-							: COVER_MODIFIER;
-
-						// TODO: good angle
-
-						return coverOrFlankingModifier;
+							: COVER_MODIFIER + attacker.calculateGoodAngleModifier(target);
 					})
+			);
+		}
+
+		calculateGoodAngleModifier(target: Unit): number {
+			const cover = target.calculateCover();
+			const difference = this.position.subtract(target.position);
+			let angle: number;
+
+			if (
+				Math.abs(difference.x) > Math.abs(difference.y) &&
+				((difference.x > 0 && !cover.east) || (difference.x < 0 && !cover.west))
+			) {
+				// Horizontal baseline -> atan(y / x)
+				angle = Math.abs(Math.atan(difference.y / difference.x));
+			} else if (
+				Math.abs(difference.y) > Math.abs(difference.x) &&
+				((difference.y > 0 && !cover.north) || (difference.y < 0 && !cover.south))
+			) {
+				// Vertical baseline -> atan(x / y)
+				angle = Math.abs(Math.atan(difference.x / difference.y));
+			} else {
+				return 0;
+			}
+
+			return (
+				Math.min(
+					1,
+					Math.max(
+						0,
+						(GOOD_ANGLE_MAX_RAD - angle) / (GOOD_ANGLE_MAX_RAD - GOOD_ANGLE_MIN_RAD)
+					)
+				) * GOOD_ANGLE_MAX_MODIFIER
 			);
 		}
 
@@ -180,12 +217,18 @@
 		toString(): string {
 			return `(${this.x}, ${this.y})`;
 		}
+
+		subtract(other: Point): Point {
+			return new Point(this.x - other.x, this.y - other.y);
+		}
 	}
 
 	const field = Field.parse(MAP);
 	let player = new Unit(field, 'player', new Point(1, 1));
-	const enemy1 = new Unit(field, 'enemy', new Point(7, 7));
-	const enemy2 = new Unit(field, 'enemy', new Point(2, 1));
+	const enemy1 = new Unit(field, 'enemy', new Point(7, 12));
+	const enemy2 = new Unit(field, 'enemy', new Point(2, 5));
+	const enemy3 = new Unit(field, 'enemy', new Point(8, 0));
+	const enemies = [enemy1, enemy2, enemy3];
 
 	type DisplayCell = Cell | UnitType;
 	function getDisplayField(field: Field, units: Unit[]): DisplayCell[][] {
@@ -209,9 +252,8 @@
 		}
 	}
 
-	$: displayField = getDisplayField(field, [player, enemy1, enemy2]);
-	$: enemy1AimModifier = player.calculateAimModifier(enemy1);
-	$: enemy2AimModifier = player.calculateAimModifier(enemy2);
+	$: displayField = getDisplayField(field, [player, ...enemies]);
+	$: aimModifiers = enemies.map(player.calculateAimModifier.bind(player));
 </script>
 
 <h1>Fight</h1>
@@ -234,12 +276,9 @@
 	{/each}
 </div>
 
-<p>
-	Enemy 1 {enemy1.position.toString()} aim mod: {enemy1AimModifier * 100}%
-</p>
-<p>
-	Enemy 2 {enemy2.position.toString()} aim mod: {enemy2AimModifier * 100}%
-</p>
+{#each aimModifiers as aimModifier, i}
+	<p>Enemy {i + 1} {enemies[i].position.toString()} aim mod: {(aimModifier * 100).toFixed(2)}%</p>
+{/each}
 
 <style lang="scss">
 	.field {
