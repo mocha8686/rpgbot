@@ -70,9 +70,7 @@
 		const modifiers = getPossibleAimPositions(field, playerPosition, enemyPosition)
 			.filter((playerPosition) => {
 				// Line of sight
-				console.group(JSON.stringify(playerPosition));
 				const res = canSee(field, playerPosition, enemyPosition);
-				console.groupEnd();
 				return res;
 			})
 			.map((playerPosition) => {
@@ -169,7 +167,6 @@
 			y += yIncrement;
 
 			const cell = getCellAtPosition(field, [Math.round(x), Math.round(y)]);
-			console.debug(`(${Math.round(x)}, ${Math.round(y)}): ${cell}`);
 			if (cell === undefined || cell === 'wall') return false;
 		}
 
