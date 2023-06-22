@@ -67,37 +67,7 @@
 		playerPosition: Point,
 		enemyPosition: Point
 	): number {
-		const playerCover = calculateCover(field, playerPosition);
-
-		const possiblePlayerPositions = [playerPosition];
-
-		if (
-			(playerCover.north && enemyPosition[1] < playerPosition[1]) ||
-			(playerCover.south && enemyPosition[1] > playerPosition[1])
-		) {
-			const westPos: Point = [playerPosition[0] - 1, playerPosition[1]];
-			if (getCellAtPosition(field, westPos) === 'empty')
-				possiblePlayerPositions.push(westPos);
-
-			const eastPos: Point = [playerPosition[0] + 1, playerPosition[1]];
-			if (getCellAtPosition(field, eastPos) === 'empty')
-				possiblePlayerPositions.push(eastPos);
-		}
-
-		if (
-			(playerCover.east && enemyPosition[0] > playerPosition[0]) ||
-			(playerCover.west && enemyPosition[0] < playerPosition[0])
-		) {
-			const northPos: Point = [playerPosition[0], playerPosition[1] - 1];
-			if (getCellAtPosition(field, northPos) === 'empty')
-				possiblePlayerPositions.push(northPos);
-
-			const southPos: Point = [playerPosition[0], playerPosition[1] + 1];
-			if (getCellAtPosition(field, southPos) === 'empty')
-				possiblePlayerPositions.push(southPos);
-		}
-
-		const modifiers = possiblePlayerPositions
+		const modifiers = getPossibleAimPositions(field, playerPosition, enemyPosition)
 			.filter((playerPosition) => {
 				// Line of sight
 				console.group(JSON.stringify(playerPosition));
@@ -120,6 +90,39 @@
 		if (modifiers.length === 0) return NaN;
 
 		return Math.max(...modifiers);
+	}
+
+	function getPossibleAimPositions(
+		field: Field,
+		attackerPosition: Point,
+		defenderPosition: Point
+	): Point[] {
+		const possiblePositions = [attackerPosition];
+		const attackerCover = calculateCover(field, attackerPosition);
+
+		if (
+			(attackerCover.north && defenderPosition[1] < attackerPosition[1]) ||
+			(attackerCover.south && defenderPosition[1] > attackerPosition[1])
+		) {
+			const westPos: Point = [attackerPosition[0] - 1, attackerPosition[1]];
+			if (getCellAtPosition(field, westPos) === 'empty') possiblePositions.push(westPos);
+
+			const eastPos: Point = [attackerPosition[0] + 1, attackerPosition[1]];
+			if (getCellAtPosition(field, eastPos) === 'empty') possiblePositions.push(eastPos);
+		}
+
+		if (
+			(attackerCover.east && defenderPosition[0] > attackerPosition[0]) ||
+			(attackerCover.west && defenderPosition[0] < attackerPosition[0])
+		) {
+			const northPos: Point = [attackerPosition[0], attackerPosition[1] - 1];
+			if (getCellAtPosition(field, northPos) === 'empty') possiblePositions.push(northPos);
+
+			const southPos: Point = [attackerPosition[0], attackerPosition[1] + 1];
+			if (getCellAtPosition(field, southPos) === 'empty') possiblePositions.push(southPos);
+		}
+
+		return possiblePositions;
 	}
 
 	function calculateCoverModifiers(
