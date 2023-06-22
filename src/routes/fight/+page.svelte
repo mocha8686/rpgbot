@@ -26,11 +26,11 @@
 		'WWWWWWWWWW',
 		'W----WW--W',
 		'W--------W',
-		'W--W-----W',
+		'W--W---W-W',
 		'W--W---W-W',
 		'W--W-----W',
-		'W-WW---W-W',
-		'W-WW-----W',
+		'W-WWW--W-W',
+		'W-WWW----W',
 		'W--------W',
 		'WWWWWWWWWW',
 	];
@@ -41,13 +41,19 @@
 		type: 'player',
 		position: [2, 2],
 	};
-	const enemy: Unit = {
+	const enemy1: Unit = {
 		id: crypto.randomUUID(),
 		type: 'enemy',
 		position: [7, 7],
 	};
+	const enemy2: Unit = {
+		id: crypto.randomUUID(),
+		type: 'enemy',
+		position: [8, 4],
+	};
+	const enemies = [enemy1, enemy2];
 
-	$: field = placeUnitsOnMap(structuredClone(map), [player, enemy]);
+	$: field = placeUnitsOnMap(structuredClone(map), [player, ...enemies]);
 
 	function placeUnitsOnMap(map: Field, units: Unit[]): Field {
 		for (const unit of units) {
@@ -56,44 +62,62 @@
 		return map;
 	}
 
-	function calculateAimModifier(field: Field): number {
-		const playerPosition = findFirstIndexOf(field, 'player');
-		const enemyPosition = findFirstIndexOf(field, 'enemy');
-
-		if (!playerPosition || !enemyPosition) return NaN;
-
+	function calculateAimModifier(
+		field: Field,
+		playerPosition: Point,
+		enemyPosition: Point
+	): number {
 		const playerCover = calculateCover(field, playerPosition);
-		/// FIXME: disallow step out if enemy is to the rear
-		const stepOutPositions = [playerPosition];
-		if (playerCover.north || playerCover.south) {
+
+		const possiblePlayerPositions = [playerPosition];
+
+		if (
+			(playerCover.north && enemyPosition[1] < playerPosition[1]) ||
+			(playerCover.south && enemyPosition[1] > playerPosition[1])
+		) {
 			const westPos: Point = [playerPosition[0] - 1, playerPosition[1]];
-			if (getCellAtPosition(field, westPos) === 'empty') stepOutPositions.push(westPos);
+			if (getCellAtPosition(field, westPos) === 'empty')
+				possiblePlayerPositions.push(westPos);
 
 			const eastPos: Point = [playerPosition[0] + 1, playerPosition[1]];
-			if (getCellAtPosition(field, eastPos) === 'empty') stepOutPositions.push(eastPos);
+			if (getCellAtPosition(field, eastPos) === 'empty')
+				possiblePlayerPositions.push(eastPos);
 		}
 
-		if (playerCover.east || playerCover.west) {
+		if (
+			(playerCover.east && enemyPosition[0] > playerPosition[0]) ||
+			(playerCover.west && enemyPosition[0] < playerPosition[0])
+		) {
 			const northPos: Point = [playerPosition[0], playerPosition[1] - 1];
-			if (getCellAtPosition(field, northPos) === 'empty') stepOutPositions.push(northPos);
+			if (getCellAtPosition(field, northPos) === 'empty')
+				possiblePlayerPositions.push(northPos);
 
 			const southPos: Point = [playerPosition[0], playerPosition[1] + 1];
-			if (getCellAtPosition(field, southPos) === 'empty') stepOutPositions.push(southPos);
+			if (getCellAtPosition(field, southPos) === 'empty')
+				possiblePlayerPositions.push(southPos);
 		}
 
-		const modifiers = stepOutPositions.map((playerPosition) => {
-			// Line of sight
+		const modifiers = possiblePlayerPositions
+			.filter((playerPosition) => {
+				// Line of sight
+				console.group(JSON.stringify(playerPosition));
+				const res = canSee(field, playerPosition, enemyPosition);
+				console.groupEnd();
+				return res;
+			})
+			.map((playerPosition) => {
+				const [coverModifier, flankingModifier] = calculateCoverModifiers(
+					field,
+					playerPosition,
+					enemyPosition
+				);
 
-			const [coverModifier, flankingModifier] = calculateCoverModifiers(
-				field,
-				playerPosition,
-				enemyPosition
-			);
+				// Good angle
 
-			// Good angle
+				return coverModifier + flankingModifier;
+			});
 
-			return coverModifier + flankingModifier;
-		});
+		if (modifiers.length === 0) return NaN;
 
 		return Math.max(...modifiers);
 	}
@@ -125,14 +149,28 @@
 		};
 	}
 
-	function findFirstIndexOf(field: Field, cell: Cell): Point | undefined {
-		for (let y = 0; y < field.length; y++) {
-			for (let x = 0; x < field[y].length; x++) {
-				if (getCellAtPosition(field, [x, y]) === cell) return [x, y];
-			}
+	function canSee(field: Field, src: Point, dst: Point): boolean {
+		// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+		const dx = dst[0] - src[0];
+		const dy = dst[1] - src[1];
+		const steps = Math.max(Math.abs(dx), Math.abs(dy));
+
+		const xIncrement = dx / steps;
+		const yIncrement = dy / steps;
+
+		let x = src[0];
+		let y = src[1];
+
+		for (let i = 0; i < steps; i++) {
+			x += xIncrement;
+			y += yIncrement;
+
+			const cell = getCellAtPosition(field, [Math.round(x), Math.round(y)]);
+			console.debug(`(${Math.round(x)}, ${Math.round(y)}): ${cell}`);
+			if (cell === undefined || cell === 'wall') return false;
 		}
 
-		return undefined;
+		return true;
 	}
 
 	function getCellAtPosition(field: Field, position: Point): Cell | undefined {
@@ -170,7 +208,9 @@
 		if (getCellAtPosition(field, [newX, newY]) === 'empty') player.position = [newX, newY];
 	}
 
-	$: aimModifier = calculateAimModifier(field);
+	$: aimModifiers = enemies.map((enemy) =>
+		calculateAimModifier(field, player.position, enemy.position)
+	);
 </script>
 
 <h1>Fight</h1>
@@ -189,7 +229,10 @@
 	{/each}
 </div>
 
-<p>Aim modifier: {`${(aimModifier * 100).toFixed(2)}%`}</p>
+<p>Aim modifiers:</p>
+{#each aimModifiers as aimModifier}
+	<p>{`${(aimModifier * 100).toFixed(2)}%`}</p>
+{/each}
 
 <style lang="scss">
 	.field {
