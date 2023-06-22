@@ -68,11 +68,7 @@
 		enemyPosition: Point
 	): number {
 		const modifiers = getPossibleAimPositions(field, playerPosition, enemyPosition)
-			.filter((playerPosition) => {
-				// Line of sight
-				const res = canSee(field, playerPosition, enemyPosition);
-				return res;
-			})
+			.filter((playerPosition) => canSee(field, playerPosition, enemyPosition))
 			.map((playerPosition) => {
 				const [coverModifier, flankingModifier] = calculateCoverModifiers(
 					field,
